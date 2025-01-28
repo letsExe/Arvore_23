@@ -12,6 +12,13 @@ struct no23 {
 
 typedef struct no23* arvore23;
 
+// Estrutura para uma fila auxiliar para BFS
+typedef struct fila {
+    arvore23 no;
+    int nivel;
+    struct fila *prox;
+} Fila;
+
 // Função para criar um nó na árvore 2-3
 arvore23 criaNo23(int chaveEsq, int chaveDir, arvore23 esq, arvore23 meio, arvore23 dir, int n) {
     arvore23 novoNo = (arvore23)malloc(sizeof(struct no23));
@@ -143,19 +150,19 @@ arvore23 busca(arvore23 r, int chave) {
     }
 }
 
-void imprimeArvore(arvore23 r, int nivel) {
-    if (vazia(r)) return;
-    printf("Nivel %d: ", nivel);
-    printf("[%d", r->chave_esq);
+// void imprimeArvore(arvore23 r, int nivel) {
+//     if (vazia(r)) return;
+//     printf("Nivel %d: ", nivel);
+//     printf("[%d", r->chave_esq);
 
-    if (r->n == 2) printf(", %d", r->chave_dir);
-    printf("]\n");
+//     if (r->n == 2) printf(", %d", r->chave_dir);
+//     printf("]\n");
 
-    imprimeArvore(r->esq, nivel + 1);
-    imprimeArvore(r->meio, nivel + 1);
+//     imprimeArvore(r->esq, nivel + 1);
+//     imprimeArvore(r->meio, nivel + 1);
     
-    if (r->n == 2) imprimeArvore(r->dir, nivel + 1);
-}
+//     if (r->n == 2) imprimeArvore(r->dir, nivel + 1);
+// }
 
 int minimo(arvore23 r) {
     if(!vazia(r)){
@@ -185,14 +192,126 @@ int maximo(arvore23 r){
 }
 
 int conta_nos(arvore23 r){
+    if(vazia(r)) return 0;
 
+    return 1 + conta_nos(r->esq) + conta_nos(r->meio) + conta_nos(r->dir);
 }
 
 void in_ordem(arvore23 r){
+    if(vazia(r)) return;
 
+    in_ordem(r->esq);
+    printf("%d ", r->chave_esq);
+    in_ordem(r->meio);
+    if(r->n == 2){
+        printf("%d ", r->chave_dir);
+    }
+    in_ordem(r->dir);
 }
 
-// Função principal para testar inserção e impressão
+// Função auxiliar para encontrar o menor valor de uma subárvore
+int encontrarMenor(arvore23 raiz) {
+    while (raiz->esq != NULL) {
+        raiz = raiz->esq;
+    }
+    return raiz->chave_esq;
+}
+
+// Função para remover um valor de uma árvore 2-3
+arvore23 remover(arvore23 raiz, int chave) {
+    if (raiz == NULL) {
+        return NULL; // Se a árvore está vazia
+    }
+
+    // Caso 1: Se a chave está na raiz
+    if ((raiz->n == 1 && raiz->chave_esq == chave) || 
+        (raiz->n == 2 && raiz->chave_dir == chave)) {
+
+        // Se for folha, basta remover a chave
+        if (raiz->esq == NULL && raiz->meio == NULL && raiz->dir == NULL) {
+            if (raiz->n == 2) {
+                if (raiz->chave_esq == chave) {
+                    raiz->chave_esq = raiz->chave_dir;
+                }
+                raiz->n = 1;
+            } else {
+                free(raiz);
+                return NULL;
+            }
+        } else { 
+            // Se não for folha, substituir pela menor chave da subárvore direita
+            if (raiz->n == 2 && raiz->chave_dir == chave) {
+                raiz->chave_dir = encontrarMenor(raiz->dir);
+                raiz->dir = remover(raiz->dir, raiz->chave_dir);
+            } else {
+                raiz->chave_esq = encontrarMenor(raiz->meio);
+                raiz->meio = remover(raiz->meio, raiz->chave_esq);
+            }
+        }
+    }
+    // Caso 2: Se a chave está em uma subárvore
+    else {
+        if (chave < raiz->chave_esq) {
+            raiz->esq = remover(raiz->esq, chave);
+        } else if (raiz->n == 1 || (raiz->n == 2 && chave < raiz->chave_dir)) {
+            raiz->meio = remover(raiz->meio, chave);
+        } else {
+            raiz->dir = remover(raiz->dir, chave);
+        }
+    }
+
+    return raiz;
+}
+
+// Função para enfileirar um nó na BFS
+void enfileirar(Fila **frente, Fila **tras, arvore23 no, int nivel) {
+    Fila *novo = (Fila *)malloc(sizeof(Fila));
+    novo->no = no;
+    novo->nivel = nivel;
+    novo->prox = NULL;
+    if (*tras) (*tras)->prox = novo;
+    *tras = novo;
+    if (*frente == NULL) *frente = novo;
+}
+
+// Função para desenfileirar um nó na BFS
+arvore23 desenfileirar(Fila **frente, int *nivel) {
+    if (*frente == NULL) return NULL;
+    Fila *temp = *frente;
+    arvore23 no = temp->no;
+    *nivel = temp->nivel;
+    *frente = temp->prox;
+    free(temp);
+    return no;
+}
+
+// Função para imprimir a árvore 2-3 no formato especificado
+void imprimeArvore(arvore23 raiz) {
+    if (raiz == NULL) return;
+
+    Fila *frente = NULL, *tras = NULL;
+    enfileirar(&frente, &tras, raiz, 0);
+
+    int nivel_atual = 0;
+    while (frente != NULL) {
+        int nivel;
+        arvore23 no = desenfileirar(&frente, &nivel);
+
+        if (nivel > nivel_atual) {
+            printf("\n"); // Quebra de linha entre níveis
+            nivel_atual = nivel;
+        }
+
+        // Imprime o nó no formato especificado
+        printf("[%d,%s] ", no->chave_esq, (no->n == 2) ? (char[6]){no->chave_dir + '0', '\0'} : "-");
+
+        // Enfileira os filhos
+        if (no->esq) enfileirar(&frente, &tras, no->esq, nivel + 1);
+        if (no->meio) enfileirar(&frente, &tras, no->meio, nivel + 1);
+        if (no->n == 2 && no->dir) enfileirar(&frente, &tras, no->dir, nivel + 1);
+    }
+    printf("\n");
+}
 int main() {
     arvore23 raiz = NULL;
 
@@ -205,12 +324,17 @@ int main() {
     raiz = inserir(raiz, 50);
     raiz = inserir(raiz, 80);
 
-    // Imprime a árvore resultante
-    //printf("Árvore 2-3 após as inserções:\n");
-    //imprimeArvore(raiz, 0);
+    // imprimeArvore(raiz);
 
-    printf("Maximo = %d\n", maximo(raiz));
-    printf("Minimo = %d\n", minimo(raiz));
+    // printf("Maximo = %d\n", maximo(raiz));
+    // printf("Minimo = %d\n", minimo(raiz));
+    // printf("Conta no = %d\n", conta_nos(raiz));
+    // in_ordem(raiz);
+    // printf("\n");
+    remover(raiz, 50);
+    imprimeArvore(raiz);
+
+
 
     return 0;
 }
