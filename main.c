@@ -162,7 +162,7 @@ int minimo(arvore23 r) {
         if(eh_folha(r)){
             return r->chave_esq;
         }
-        return minimo(r->chave_esq);
+        return minimo(r->esq);
     } 
     return -1;
 }
@@ -170,9 +170,16 @@ int minimo(arvore23 r) {
 int maximo(arvore23 r){
     if(!vazia(r)){
         if(eh_folha(r)){
+            if(r->n == 1){
+                return r->chave_esq;
+            }
             return r->chave_dir;
         }
-        return maximo(r->chave_dir);
+
+        if(r->n == 1){
+            return maximo(r->meio);
+        }
+        return maximo(r->dir);
     }
     return -1;
 }
@@ -199,8 +206,11 @@ int main() {
     raiz = inserir(raiz, 80);
 
     // Imprime a árvore resultante
-    printf("Árvore 2-3 após as inserções:\n");
-    imprimeArvore(raiz, 0);
+    //printf("Árvore 2-3 após as inserções:\n");
+    //imprimeArvore(raiz, 0);
+
+    printf("Maximo = %d\n", maximo(raiz));
+    printf("Minimo = %d\n", minimo(raiz));
 
     return 0;
 }
