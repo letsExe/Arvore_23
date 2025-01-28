@@ -168,7 +168,13 @@ int minimo(arvore23 r) {
 }
 
 int maximo(arvore23 r){
-    if()
+    if(!vazia(r)){
+        if(eh_folha(r)){
+            return r->chave_dir;
+        }
+        return maximo(r->chave_dir);
+    }
+    return -1;
 }
 
 int conta_nos(arvore23 r){
