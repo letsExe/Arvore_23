@@ -157,6 +157,30 @@ void imprimeArvore(arvore23 r, int nivel) {
     if (r->n == 2) imprimeArvore(r->dir, nivel + 1);
 }
 
+// Função para imprimir as chaves dentro do intervalo [a, b]
+void imprime_intervalo(arvore23 raiz, int a, int b) {
+    if (raiz == NULL) return;
+
+    // Verifica o nó esquerdo se há valores no intervalo
+    if (raiz->chave_esq >= a)
+        imprime_intervalo(raiz->esq, a, b);
+
+    // Imprime a chave esquerda se estiver no intervalo
+    if (raiz->chave_esq >= a && raiz->chave_esq <= b)
+        printf("%d ", raiz->chave_esq);
+
+    // Verifica o nó do meio
+    imprime_intervalo(raiz->meio, a, b);
+
+    // Imprime a chave direita (se existir) e estiver no intervalo
+    if (raiz->n == 2 && raiz->chave_dir >= a && raiz->chave_dir <= b)
+        printf("%d ", raiz->chave_dir);
+
+    // Verifica o nó direito se há valores no intervalo
+    if (raiz->n == 2 && raiz->chave_dir <= b)
+        imprime_intervalo(raiz->dir, a, b);
+}
+
 int minimo(arvore23 r) {
     if(!vazia(r)){
         if(eh_folha(r)){
@@ -235,9 +259,11 @@ int main() {
     // printf("Maximo = %d\n", maximo(raiz));
     // printf("Minimo = %d\n", minimo(raiz));
     // printf("Conta no = %d\n", conta_nos(raiz));
-    // in_ordem(raiz);
-    // printf("\n");
-    printf("Cheio = %d\n", conta_noCheio(raiz));
+     in_ordem(raiz);
+     printf("\n");
+    // printf("Cheio = %d\n", conta_noCheio(raiz));
+
+    imprime_intervalo(raiz, 55, 55);
 
     return 0;
 }
